@@ -127,13 +127,93 @@ Try {
 		Show-InstallationProgress
 
 		## <Perform Pre-Installation tasks here>
+		## This essentially replaces the functionality of Creative Cloud Packager. It even uses the same xml file as Creative Cloud Packager to perform the uninstall.
+		$applicationList = 'Adobe General Labs Bundle','Photoshop','Illustrator','InDesign','Acrobat','Creative Cloud'
+		ForEach($installedApplication in $applicationList) {
+			$installedApplicationList = Get-InstalledApplication -Name $installedApplication
+			ForEach($application in $installedApplicationList) {
+				$application
+				if($application.UninstallString) {
+					Write-Log -Message "Uninstall string: $($application.UninstallString)" -Source 'Pre-Installation' -LogType 'CMTrace'
+					Write-Log -Message "Uninstall subkey: $($application.UninstallSubkey)" -Source 'Pre-Installation' -LogType 'CMTrace'
+					## First, we want to check if the program was installed with a package. If it was, then we simply run the MSI uninstaller.
+					if($application.UninstallString.contains("MsiExec.exe") -and ($application.UninstallSubkey)) {
+						## You might get exit code 1603 if the packaged apps were uninstalled without using the MSI uninstaller.
+						## The MSI uninstaller will try to run, see that there are no apps to uninstall, and fail with exit code 1603.
+						## The only way to remove the package is to reinstall the package and then uninstall it with the MSI uninstaller.
+						## You might also be able to do a manual cleanup of leftover files, directories, and or reg keys.
+						Write-Log -Message "Attempting to run uninstaller..." -Source 'Pre-Installation' -LogType 'CMTrace'
+						$exitCode = Execute-Process -Path "MsiExec.exe" -Parameters "/x$($application.UninstallSubkey) /q" -WindowStyle "Hidden"-IgnoreExitCodes '1603' -PassThru
+						If (($exitCode.ExitCode -ne "0") -and ($mainExitCode -ne "3010")) { $mainExitCode = $exitCode.ExitCode }
+					}
+					## If the application wasn't installed with a package, we'll to check to see if it uses the standard Adobe uninstaller. If it does, we're in luck.
+					## Unfortunately, we can't run it as is because the standard Adobe uninstaller requires user interaction. However, it does give us everything we need to do a silent uninstall.
+					## The full uninstall string provided by Get-InstalledApplication will look something like this:
+					## C:\Program Files (x86)\Common Files\Adobe\Adobe Desktop Common\HDBox\Uninstaller.exe" --uninstall=1 --sapCode=ILST --productVersion=26.3.1 --productPlatform=win64 --productAdobeCode={ILST-26.3.1-64-ADBEADBEADBEADBEADBEA} --productName="Illustrator" --mode=0
+					## First, we separate out the options into individual strings using split and then remove everything except the value using trim.
+					ElseIf($application.UninstallString.contains("${Env:ProgramFiles(x86)}\Common Files\Adobe\Adobe Desktop Common\HDBox\Uninstaller.exe")) {
+						$substringArray = $application.UninstallString -split " --"
+						ForEach($item in $substringArray) {
+							if($item.contains("sapCode=")) {
+								$sapCode = $item.trim("sapCode=")
+							}
+							elseif($item.contains("productVersion=")) {
+								$productVersion = $item.trim("productVersion=")
+								$pointValues = $productVersion.split('.')
+								$baseVersion = $pointValues[0]
+							}
+							elseif($item.contains("productPlatform=")) {
+								$productPlatform = $item.trim("productPlatform=")
+							}
+						}
+						## This next part is a little messy. We can't just pass the $productVersion into the uninstaller below because the uninstaller is expecting the base version of the application so it knows what to uninstall.
+						## To get around that, we have to compare the installed version against a list of base versions that Adobe provides as an xml file.
+						## If you look above, you'll see that we take our $productVersion and pare it down to $baseVersion. In other words, 25.4.6 becomes 25.
+						## Unfortunately, we can't pass that directly, because the base version could be 25.0 or even 25.0.0. So now, we compare our 25 to the product version contained in our xml file.
+						## Conceivably, you could get 13.0.25 instead of 25.0.0, so we want to make sure that 25 shows up at the beginning of the version number. We perform a wildcard comparision  using * to see if 25 matches 25.0 in the XML file.
+						[xml]$xmlAdobeCCUninstallerConfig = Get-Content -Path "$dirFiles\AdobeCCUninstallerConfig.xml"
+						$xmlAdobeCCUninstallerConfig.CCPUninstallXML.UninstallInfo.RIBS.Products.Product | Where-Object {$_.SapCode -eq $sapCode -and $_.Version -like "$baseVersion*"} |  ForEach-Object {
+							Write-Log -Message "$($_.SapCode), $($_.Version)" -Source 'Pre-Installation' -LogType 'CMTrace'
+							If ( Test-Path "${Env:ProgramFiles(x86)}\Common Files\Adobe\Adobe Desktop Common\HDBox\Setup.exe") {
+								$exitCode = Execute-Process -Path "${Env:ProgramFiles(x86)}\Common Files\Adobe\Adobe Desktop Common\HDBox\Setup.exe" -Parameters "--uninstall=1 --sapCode=$($_.SapCode) --baseVersion=$($_.Version) --platform=$($_.Platform) --deleteUserPreferences=false" -WindowStyle "Hidden" -IgnoreExitCodes '33,135' -PassThru
+								If (($exitCode.ExitCode -ne "0") -and ($mainExitCode -ne "3010")) { $mainExitCode = $exitCode.ExitCode }
+							}
+						}
+						$xmlAdobeCCUninstallerConfig.CCPUninstallXML.UninstallInfo.HD.Products.Product | Where-Object {$_.SapCode -eq $sapCode -and $_.BaseVersion -like "$baseVersion*"} |  ForEach-Object {
+							Write-Log -Message "$($_.SapCode), $($_.BaseVersion)" -Source 'Pre-Installation' -LogType 'CMTrace'
+							If ( Test-Path "${Env:ProgramFiles(x86)}\Common Files\Adobe\Adobe Desktop Common\HDBox\Setup.exe") {
+								$exitCode = Execute-Process -Path "${Env:ProgramFiles(x86)}\Common Files\Adobe\Adobe Desktop Common\HDBox\Setup.exe" -Parameters "--uninstall=1 --sapCode=$($_.SapCode) --baseVersion=$($_.BaseVersion) --platform=$($_.Platform) --deleteUserPreferences=false" -WindowStyle "Hidden" -IgnoreExitCodes '33,135' -PassThru
+								If (($exitCode.ExitCode -ne "0") -and ($mainExitCode -ne "3010")) { $mainExitCode = $exitCode.ExitCode }
+							}
+						}
+					}
+					ElseIf($application.UninstallString.contains("${Env:ProgramFiles(x86)}\Adobe\Adobe Creative Cloud\Utils\Creative Cloud Uninstaller.exe")) {
+						Write-Log -Message "Attempting to run uninstaller..." -Source 'Pre-Installation' -LogType 'CMTrace'
+						Write-Log -Message "Note: Creative Cloud can not be uninstalled if there are Creative Cloud applications installed that require it." -Source 'Pre-Installation' -LogType 'CMTrace'
+						$exitCode = Execute-Process -Path "${Env:ProgramFiles(x86)}\Adobe\Adobe Creative Cloud\Utils\Creative Cloud Uninstaller.exe" -Parameters "-u" -WindowStyle "Hidden" -PassThru
+						If (($exitCode.ExitCode -ne "0") -and ($mainExitCode -ne "3010")) { $mainExitCode = $exitCode.ExitCode }
+					}
+					Else {
+						Write-Log -Message "The uninstall string returned was not expected." -Source 'Pre-Installation' -LogType 'CMTrace'
+					}
+				}
+				Else {
+					Write-Log -Message "A program was detected but a valid uninstall string and or subkey could not be found." -Source 'Pre-Installation' -LogType 'CMTrace'
+
+				}
+			}
+		}
+
+		## This is the old way of doing it. Adobe is no longer continuing development and maintenance of Creative Cloud Packager and
+		## recommends that you do not continue using Creative Cloud Packager to uninstall Creative Cloud apps.
+		<#
 		Remove-File -Path "$envCommonProgramFilesX86\Adobe\OOBE\PDApp\*" -Recurse -ContinueOnError $true
 		If (-not ($envOSVersion -like "10.0*")) {
 			Install-MSUpdates -Directory "$dirSupportFiles\$envOSVersionMajor.$envOSVersionMinor"
 		}
 				$exitCode = Execute-Process -Path "$dirSupportFiles\Uninstall\AdobeCCUninstaller.exe" -WindowStyle "Hidden" -IgnoreExitCodes '33,135' -PassThru
 				If (($exitCode.ExitCode -ne "0") -and ($mainExitCode -ne "3010")) { $mainExitCode = $exitCode.ExitCode }
-
+		#>
 
 		##*===============================================
 		##* INSTALLATION
@@ -204,9 +284,16 @@ Try {
 		}
 
 		# <Perform Uninstallation tasks here>
+		$exitCode = Execute-Process -Path "MsiExec.exe" -Parameters "/x{ee97b574-f867-491c-9b34-4bef9f0dda12} /q" -WindowStyle "Hidden" -PassThru
+		If (($exitCode.ExitCode -ne "0") -and ($mainExitCode -ne "3010")) { $mainExitCode = $exitCode.ExitCode }
+
+
+		## Adobe is no longer continuing development and maintenance of Creative Cloud Packager and recommends that you do not continue using Creative Cloud Packager to uninstall Creative Cloud apps.
+		<#
 		$exitCode = Execute-Process -Path "$dirSupportFiles\Uninstall\AdobeCCUninstaller.exe" -WindowStyle "Hidden" -IgnoreExitCodes '33,135' -PassThru
 		Start-Sleep -s 10
 		If (($exitCode.ExitCode -ne "0") -and ($mainExitCode -ne "3010")) { $mainExitCode = $exitCode.ExitCode }
+		#>
 
 		##*===============================================
 		##* POST-UNINSTALLATION
@@ -267,8 +354,8 @@ Catch {
 # SIG # Begin signature block
 # MIIU9wYJKoZIhvcNAQcCoIIU6DCCFOQCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUfncug/g62/e791iqjSir59bC
-# lf+gghHXMIIFbzCCBFegAwIBAgIQSPyTtGBVlI02p8mKidaUFjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUABZGM/NEU1dMh3yDI70XrNgN
+# 1YGgghHXMIIFbzCCBFegAwIBAgIQSPyTtGBVlI02p8mKidaUFjANBgkqhkiG9w0B
 # AQwFADB7MQswCQYDVQQGEwJHQjEbMBkGA1UECAwSR3JlYXRlciBNYW5jaGVzdGVy
 # MRAwDgYDVQQHDAdTYWxmb3JkMRowGAYDVQQKDBFDb21vZG8gQ0EgTGltaXRlZDEh
 # MB8GA1UEAwwYQUFBIENlcnRpZmljYXRlIFNlcnZpY2VzMB4XDTIxMDUyNTAwMDAw
@@ -368,13 +455,13 @@ Catch {
 # ZSBTaWduaW5nIENBIFIzNgIRAKVN33D73PFMVIK48rFyyjEwCQYFKw4DAhoFAKB4
 # MBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisGAQQB
 # gjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkE
-# MRYEFDKAkorqpdfg0K4GSu1cT2en+iQqMA0GCSqGSIb3DQEBAQUABIIBgHVQViaz
-# iNUUr15K4ObnMf6KJerK5V4gMdKp6sRyWN6YgUGckC6361qcknmZgWadeS3CntpW
-# cElG7xJl/Lpb370LTJVaXTnyKDg5tdbpy2kKT2NtO9QLjittq80+9GeLOX15KdUe
-# gdlCeJtX2yB7DhrEgikaGPg3/wLH9HF0NMeWnfVqI5fi2G7hfFTEjog0gHNzQMSQ
-# p0fzTGkdFsrEi8D3ia4MbVUUExFBSjxpvU0lHmeWtIegSfM13NMy4MSDY70qT+ly
-# UDCNsrMpqiMSybeWnhFIlCVkHe/aQe5/HPNPnu6Gp/JgVCR/sb7le+ZfLuzauFpq
-# m/igXnfqxqqeEiXRBfbwU0qQBfN+gK5tahzVbY7ewlHmHttQ44irjjY3in42Hfmq
-# igvIhVgUKrREJFru7AYxdrTwoSR7lePw6AuQWumIeTKXCK4SEGTxdFbbv3g3f3iO
-# Mn227/eCSnSE6MbtaX5z3TKypc5OLdqA93CiDlFOHUPBfkIcKW0jUoijPQ==
+# MRYEFAS+PEffTxqI7SwnbSiwvidsSTGUMA0GCSqGSIb3DQEBAQUABIIBgCMOUnbh
+# MSJqCaL6lIsoW4xPay03OKfAAq+ZVVhPJpz1fiPnb5dSDpARXtd6wCI5QFNMWEBQ
+# YspOE6ZSjZF4MOWNB530b982k2VmNzArzbwD2B1UKSYupHkRVHpPdu5LtONBypVD
+# oWjGRoaYscYAW7L6EbiLpxWWNL0ugnU2ydF67CTYDaaJkldE8vVtnfw1nguk8mWC
+# j/Luqgxd3TNUd6EWMz1v6/kPpnUrRWfzZRCf3biWNPcHh8A1b1Sefe7Fe++sJUWT
+# CHlVt5f8HVkWx7Z9CWuAWRSQox61QVX+ms5FHpZNAaM3B84g8JkuOWSgA3sfrWXc
+# ri/stb/CH1HNy70R75xPlyqzt0vhxb9zebbuxiUpvsYDLUaOdtQeemnh12pEL469
+# fwvy9qP7//Ee+3xYC9RoKJopFMaum8hjFEC7T1YNgvr4Jw7nMIdZvLi/xdr081v2
+# YHPsFv+aBNmw5kGb1Nle8ISK3d9OFvlFPma8mKRIsSrOjQlVNEK8OW980w==
 # SIG # End signature block
