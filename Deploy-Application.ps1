@@ -71,7 +71,7 @@ Try {
 	[string]$appArch = 'x64'
 	[string]$appLang = 'EN'
 	[string]$appRevision = '01'
-	[string]$appScriptVersion = '1.0.0'
+	[string]$appScriptVersion = '3.0.0'
 	[string]$appScriptDate = '05/16/2023'
 	[string]$appScriptAuthor = 'Will Jarvill'
 	##*===============================================
@@ -125,10 +125,10 @@ Try {
 
 		## Show Progress Message (with the default message)
 		Show-InstallationProgress
-<#
+
 		## <Perform Pre-Installation tasks here>
 		## This essentially replaces the functionality of Creative Cloud Packager. It even uses the same xml file as Creative Cloud Packager to perform the uninstall.
-		 $applicationList = 'Adobe General Labs Bundle','Photoshop','Illustrator','InDesign','Creative Cloud'
+		$applicationList = 'Adobe General Labs Bundle','Acrobat','Photoshop','Illustrator','InDesign','Creative Cloud'
 		ForEach($installedApplication in $applicationList) {
 			$installedApplicationList = Get-InstalledApplication -Name $installedApplication
 			ForEach($application in $installedApplicationList) {
@@ -203,7 +203,7 @@ Try {
 				}
 			}
 		}
-#>
+
 		## This is the old way of doing it. Adobe is no longer continuing development and maintenance of Creative Cloud Packager and
 		## recommends that you do not continue using Creative Cloud Packager to uninstall Creative Cloud apps.
 		<#
@@ -359,8 +359,8 @@ Catch {
 # SIG # Begin signature block
 # MIImVAYJKoZIhvcNAQcCoIImRTCCJkECAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCoPcofFOmZyR2u
-# s232tK9FSRSK5k+RRg1sJ1Tlm1Lh8aCCH8AwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCovUaTE0hJ0usX
+# snrT2X6cRIV9wovRFAHseQ/XH5y8SKCCH8AwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -534,32 +534,32 @@ Catch {
 # MSswKQYDVQQDEyJTZWN0aWdvIFB1YmxpYyBDb2RlIFNpZ25pbmcgQ0EgUjM2AhEA
 # pU3fcPvc8UxUgrjysXLKMTANBglghkgBZQMEAgEFAKCBhDAYBgorBgEEAYI3AgEM
 # MQowCKACgAChAoAAMBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3AgEEMBwGCisGAQQB
-# gjcCAQsxDjAMBgorBgEEAYI3AgEVMC8GCSqGSIb3DQEJBDEiBCD/Hld2yhRX+l6e
-# xcl+AK8tBZ4tAPJ6gwRzRg+QK2k2VjANBgkqhkiG9w0BAQEFAASCAYB1Ucyh9wE2
-# C5DHnlKhoOMowfjTkd9sgUzBzxETi26ZoddYBQfcf8xfCoIVEArFcKVL/B29HccG
-# 6ObfWjxuRUUjWxgFYo+NZT+74NWRwSHL0AB3YHwh6YmgC/EP7PXIbyru/+sTOCTY
-# dKNnjL77wDwEfAoDPLZki3tkncA5QL9o91+XYb6Aiot6tM3v1uDwuOJOK6EyGaYn
-# UXgGoZvEPb90ToeZ1NSPqem7YI2dtsHn0z6rXnL/ZNmQgLhVGCOu/IFuGD9xIs/r
-# m+26cQc+w0aEtnhn+OQST5wCM14foMyWhPJ8sjlh4dhaxsTDMIEC4WwgTAeJesoa
-# JkhG+qXIZ1bocoDuBptfXTNAB5wJ75DQvTAj9cHicq/vhqdunuIBupdR5QXI/yJy
-# tUwTTEgTZ2uxJZq0tbJ7Hh/vf78sIHuDCs6kbOgFwkL/kUmfSTaIIw4hZyq4br6H
-# ngROZq59Htt6f9lbzyfZrUBOOW3fdH2/g07UXolx98VVeoUPK8glq3GhggNLMIID
+# gjcCAQsxDjAMBgorBgEEAYI3AgEVMC8GCSqGSIb3DQEJBDEiBCAxN1I7rUWrjFBD
+# R8e/U8wjjKBao8yvUJVgCBSPZ6DnKTANBgkqhkiG9w0BAQEFAASCAYAhl8lFcfGG
+# lpGYQa875B5LzHH5gL/wB17/fsoOEJnnvKUU68DZbKVV74n5fzmZvhhzNIV+L8V9
+# 2nVQmwYlhWjVq/XlwGoU/+8IG+JAq9qdmJKTnC3rHgKmWIlSTDs5eU476hnmCfJD
+# 3GQUg98q8szShmi2aNh5vcHOgM6BX/9owIhVWtzRwvPyJrwtvoko2HjVF5tEK30f
+# EL0mbYHiMaC3/0BFw5oTiB3UxCa1hgqXhNezSFIYi+jT1X18mM8uZfHyF6WmXu6e
+# Ne/RrlyTEnDc0/Q/VJ2yc4g3J+PdGuXfFx6UxaHNPK8m3kAClJZYqTM3tZHZRnDg
+# PIfQOTMlGXa7zxRa/igZu9lxhJlClKsPcOr22G8sEYpOWw1O4cDzZHPyIOy0nDaH
+# BuvYNxo8tRBc2YBsCdV3FyvestVycm8kXGQxL9TQBTnI0Mjv0g92Mb2CV9yVdmqc
+# u+oBvKjgx9YKBJGeTwgmHOADGpLQJ3PxuKpulDQzL0Imp7hg1qIWsvuhggNLMIID
 # RwYJKoZIhvcNAQkGMYIDODCCAzQCAQEwgZEwfTELMAkGA1UEBhMCR0IxGzAZBgNV
 # BAgTEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UEBxMHU2FsZm9yZDEYMBYGA1UE
 # ChMPU2VjdGlnbyBMaW1pdGVkMSUwIwYDVQQDExxTZWN0aWdvIFJTQSBUaW1lIFN0
 # YW1waW5nIENBAhA5TCXhfKBtJ6hl4jvZHSLUMA0GCWCGSAFlAwQCAgUAoHkwGAYJ
-# KoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjMwNzE0MTQx
-# OTQ0WjA/BgkqhkiG9w0BCQQxMgQwBw7Ow747m/zq0JIERNf/m5/uX+DTwFDTQ1y9
-# 2riKsQ8dKo98u8nsOCMcskECAmvrMA0GCSqGSIb3DQEBAQUABIICAHrjO5iTW6Ok
-# pNQA0v9pvt8gEmTWOBcYY7ZYMgzZgofUyi8xIzPwmty0BS2wAfLncVcZoTel4jzM
-# CVCA742FKaxMc0bLUJJpPIT7al4OL7w5wkzGFxQ21cQGQ/OUEUs6zG4hF2CiDK33
-# EYvcuytlWoawOcBijelpKM3j55ZduYf/nsdCfq69HT1eutGPLJdaxEsCs7Z++PNq
-# 4YjjSnWzaRYVw+bh3M6zR+e/+uAlHo548lb5cWqN1bViUcvUI+vVs/0tB6UStMZL
-# RXGP5E1dPAZODDoEzgFraJqdj1wOJVAx4kdAZxaaCT2E4+/voOpl4LLxTVRHbHFM
-# ln6seujPaaHhAtGa4soXAOB7mA6TKFrxC5ER+W6/yrXGHop/JDLvUmgwC/AM8BIA
-# qtwwdi3gDfUrHOyXOcSr2AGIGhVearIjnCoKkKBnSIomEgzGVf4HotvXWEksqq4a
-# J0jIeNyHBtxfh+k1pZyJHRcuGLdHia10duo7JCKb8IeBvecYmuEHPjbgJeFK4luL
-# /7JORl+sE4MaabaoHL3VxQU28Sy+sKoH6GpFNZNmlrcfUZqFDwGZK9Y+b0RF8DhA
-# a9TpK/iva6oAVkQU0scuA2GDUcmeLPe6C/gxWuu7xzF24ziKduvv8cCSNWXTzbKK
-# E7Q6d3B1XU/tepGFpD8vHBik0DW5y8t5
+# KoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMjMwNzE0MTcx
+# MDQwWjA/BgkqhkiG9w0BCQQxMgQwVMAozlIeIFA5lblQ3YiZR5algBiDzXGryxAp
+# 7uW2DZoSibKRVtLtxL+ZgJFM+lZBMA0GCSqGSIb3DQEBAQUABIICAFkYQp3dCktr
+# 51xWPK13MSeT/FcKbd3gaAaw/FZ8L0Wy2yv9wvcevOrFpTaU33UehR8lFJZG/yx6
+# 0Q66OR5l034/S62/jreT5LqF8afQ7McO67RuOuVT6zGJ6zWmpp6q3sPNUQEoC0k8
+# z9lPcxYqNzQIfPZJq/R+vbOrfFtGFFkZYLtBgPI3TaMmKt1+eUcaFLvVlg7Xh5C2
+# yokmmkMa9aDQ0mggP7VZzjb3GiZSi3Z2adv6p1kw9Y1jqBJzAYmBHhmXhgburhv7
+# Wku+MKWjHo40xwtBpe8UtBRoweSCiD5SWPyqVsY83GI47PdeGuNCuKfdSa80iiUJ
+# 1PVY9bqIOnPetMXP0la3jjj7JyyzOIsPf5uynyC7T9S+A268/MlbFT7FnknyYgjo
+# aqSvBSHBdM+W/sszWNN+TKse43AvMqMnmRll8g/g3T6Ae0RD9BUAgDppxjcmv9SX
+# R4F7d22gcPslvXCSeUHxkxG6inyAQ4drbtmJQ+DxCd/mF+cWY1J2iioPGFTfMDzG
+# gIHR9WgIRWfGeqhNQQa+8EVShicOFGjXfJ/Wj5bgsTbig5fOX6gmxKAVSh4eLr0m
+# DuGnpumZalQCotVfI2X0AdbPk3XK56cxx9aMiGxHcoC1+VtlfDpFV2LPA1PJsHFy
+# s+sB5o4FX6fkyQOb8piCDVQgSCQiDX7B
 # SIG # End signature block
